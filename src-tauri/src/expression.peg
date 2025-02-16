@@ -1,0 +1,39 @@
+number_dec = { hex_with_prefix | oct | bin | dec_with_prefix | dec }
+number_hex = { hex_with_prefix | oct | bin | dec_with_prefix | hex }
+dec_with_prefix = @{ "-"? ~ "0d" ~ ("_" | ASCII_DIGIT)+ }
+dec = @{ "-"? ~ ("_" | ASCII_DIGIT)+ }
+hex_with_prefix = @{ "-"? ~ "0x" ~ ("_" | ASCII_HEX_DIGIT)+ }
+hex = @{ "-"? ~ ("_" | ASCII_HEX_DIGIT)+ }
+oct = @{ "-"? ~ "0o" ~ ("_" | ASCII_OCT_DIGIT)+ }
+bin = @{ "-"? ~ "0b" ~ ("_" | ASCII_BIN_DIGIT)+ }
+ans = { "ans" }
+
+operation = _{ add | subtract | multiply | divide | rem | and | or | xor | lshift | rshift }
+    add      = { "+" }
+    subtract = { "-" }
+    multiply = { "*" }
+    divide   = { "/" }
+    rem      = { "%" }
+    and      = { "&" }
+    or       = { "|" }
+    xor      = { "^" }
+    lshift   = { "<<" }
+    rshift   = { ">>" }
+
+radix = { "dec" | "oct" | "hex" | "bin" }
+word = { (ASCII_ALPHANUMERIC | "-" | "_")+ }
+set_directive = @{ "set " ~ (word ~ " ")* ~ word }
+
+expr_dec = { term_dec ~ (operation ~ term_dec)+ }
+term_dec = _{ ans | number_dec | "(" ~ expr_dec ~ ")" }
+tor_directive_dec = { (expr_dec | number_dec) ~ "to " ~ radix }
+convert_directive_dec = { number_dec }
+line_dec = { SOI ~ (tor_directive_dec | expr_dec | set_directive | convert_directive_dec) ~ EOI }
+
+expr_hex = { term_hex ~ (operation ~ term_hex)+ }
+term_hex = _{ ans | number_hex | "(" ~ expr_hex ~ ")" }
+tor_directive_hex = { (expr_hex | number_hex) ~ "to " ~ radix }
+convert_directive_hex = { number_hex }
+line_hex = { SOI ~ (tor_directive_hex | expr_hex | set_directive | convert_directive_hex) ~ EOI }
+
+WHITESPACE = _{ " " }
