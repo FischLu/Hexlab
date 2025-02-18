@@ -108,19 +108,19 @@ const ResultDisplay: React.FC = () => {
       )}
       {parsedResult && (
         <>
-          <Typography variant="body1" color="primary">
+          <Typography className="selectable-text" variant="body1" color="primary">
             Binary: {displayRepresentation.binary}
           </Typography>
-          <Typography variant="body1" color="secondary">
+          <Typography className="selectable-text" variant="body1" color="secondary">
             Octal: {displayRepresentation.octal}
           </Typography>
-          <Typography variant="body1" color="textPrimary">
+          <Typography className="selectable-text" variant="body1" color="textPrimary">
             Signed Decimal: {parsedResult.decimal?.toString()}
           </Typography>
-          <Typography variant="body1" color="textSecondary">
+          <Typography className="selectable-text" variant="body1" color="textSecondary">
             Unsigned Decimal: {displayRepresentation.unsignedDecimal}
           </Typography>
-          <Typography variant="body1" color="error">
+          <Typography className="selectable-text" variant="body1" color="error">
             Hexadecimal: {displayRepresentation.hexadecimal}
           </Typography>
         </>

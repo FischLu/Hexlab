@@ -43,6 +43,7 @@ const StyledTextField = styled(TextField)(() => ({
     overflowY: 'scroll',
     scrollbarWidth: 'thin', // Firefox
     scrollbarColor: '#888 transparent', // Firefox
+    userSelect: 'text',
     '&::-webkit-scrollbar': {
       width: '8px'
     },
