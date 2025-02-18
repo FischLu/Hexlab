@@ -101,7 +101,7 @@ const ResultDisplay: React.FC = () => {
     <ResultBox>
       {error && (
         <Alert severity="error">
-          <ErrorMessage as="pre" variant="body2">
+          <ErrorMessage className="selectable-text" as="pre" variant="body2">
             {error}
           </ErrorMessage>
         </Alert>
