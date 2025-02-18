@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { ToggleButtonGroup, ToggleButton } from '@mui/material';
 import { styled } from '@mui/material/styles';
 
@@ -32,6 +32,14 @@ interface BitWidthToggleProps {
 }
 
 const BitWidthToggle: React.FC<BitWidthToggleProps> = ({ selectedBitWidth, minimalBitWidth, onChange }) => {
+  
+  // Automatically update selectedBitWidth if it falls below minimalBitWidth
+  useEffect(() => {
+    if (selectedBitWidth < minimalBitWidth) {
+      onChange(minimalBitWidth);
+    }
+  }, [selectedBitWidth, minimalBitWidth, onChange]);
+
   const handleChange = (_: React.MouseEvent<HTMLElement>, newValue: number | null) => {
     if (newValue !== null) {
       onChange(newValue);

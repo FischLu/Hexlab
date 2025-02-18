@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import PubSub from 'pubsub-js';
 import { Box, Button, TextField, ToggleButtonGroup, ToggleButton } from '@mui/material';
 import { styled } from '@mui/material/styles';
 
@@ -9,10 +8,11 @@ const Container = styled(Box)(({ theme }) => ({
   display: "flex",
   flexDirection: "column",
   alignItems: "center",
-  gap: theme.spacing(2),
+  gap: theme.spacing(2), // Modified: Changed from theme.spacing(2) to theme.spacing(1)
   maxWidth: "430px",
   margin: "0 auto",
   minWidth: "330px",
+  paddingTop: theme.spacing(0), // Add a small top padding if needed
 }));
 
 // Styled toggle button to be reused across components
@@ -34,7 +34,7 @@ const StyledToggleButton = styled(ToggleButton)(({ theme }) => ({
 
 // Styled TextField with custom scrollbar styling
 const StyledTextField = styled(TextField)(() => ({
-  width: '220px',
+  width: '350px',
   '& .MuiInputBase-input': {
     maxHeight: '150px',
     overflowY: 'scroll',
@@ -53,7 +53,11 @@ const StyledTextField = styled(TextField)(() => ({
   }
 }));
 
-export default function Header() {
+interface HeaderProps {
+  onCalculate: (hexResult: string, error: string | null) => void;
+}
+
+export default function Header({ onCalculate }: HeaderProps) {
   const [expression, setExpression] = useState('');
   const [mode, setMode] = useState('hex'); // 'dec' or 'hex'
 
@@ -61,13 +65,12 @@ export default function Header() {
     try {
       const res: string = await invoke('evaluate_expression', { 
         exprStr: expression,
-        options: {
-          mode: mode
-        }
+        options: { mode }
       });
-      PubSub.publish('cal_result', {result: res, error: null});
+      // Directly pass the result through the callback
+      onCalculate(res, null);
     } catch (err) {
-      PubSub.publish('cal_result', { result: null, error: `Error: ${err}` });
+      onCalculate("", `Error: ${err}`);
     }
   };
 
@@ -127,7 +130,7 @@ export default function Header() {
           }}
         />
         <Button variant="contained" color="primary" onClick={handleEvaluate}>
-          Calculate
+          Calc
         </Button>
       </Box>
     </Container>

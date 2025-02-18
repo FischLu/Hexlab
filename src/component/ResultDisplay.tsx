@@ -1,8 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Box, Typography, Alert } from '@mui/material';
 import { styled } from '@mui/material/styles';
-import PubSub from 'pubsub-js';
-import BitWidthToggle from './BitWidthToggle';
 
 const ResultBox = styled(Box)(({ theme }) => ({
   marginTop: theme.spacing(2),
@@ -11,7 +9,7 @@ const ResultBox = styled(Box)(({ theme }) => ({
   borderRadius: 10,
   maxWidth: '600px',
   minWidth: '440px',
-  minHeight: '200px',
+  minHeight: '130px',
   margin: '0 auto'
 }));
 
@@ -166,40 +164,34 @@ const recalcRepresentation = (decimal: number, bitWidth: number) => {
   return { unsignedDecimal, binary, octal, hexadecimal };
 };
 
-const ResultDisplay: React.FC = () => {
-  const [result, setResult] = useState<string | null>(null);
+interface ResultDisplayProps {
+  selectedBitWidth: number;
+  binaryValue: bigint; // Added: binaryValue passed in from App
+  onMinimalBitWidthChange: (width: number) => void;
+}
+
+const ResultDisplay: React.FC<ResultDisplayProps> = ({ selectedBitWidth, binaryValue, onMinimalBitWidthChange }) => {
   const [error, setError] = useState<string | null>(null);
   const [parsedResult, setParsedResult] = useState<ParsedResult | null>(null);
-  // user-selected bit width for displaying the result
-  const [selectedBitWidth, setSelectedBitWidth] = useState<number>(64);
 
+  // When binaryValue changes, convert it to a hex string and parse it.
   useEffect(() => {
-    const token = PubSub.subscribe('cal_result', (_, data) => {
-      setResult(data.result);
-      setError(data.error);
-    });
-
-    // Cleanup subscription on unmount
-    return () => {
-      PubSub.unsubscribe(token);
-    };
-  }, []);
-
-  // When result changes, parse it and set default selectedBitWidth to minimalBitWidth
-  useEffect(() => {
-    if (result) {
-      try {
-        const parsed = parseNumber(result);
-        setParsedResult(parsed);
-        setSelectedBitWidth(parsed.minimalBitWidth);
-      } catch (err) {
-        console.error('Parsing error:', err);
-        setError((err as Error).message);
-      }
+    const hexStr =
+      (binaryValue < 0n ? "-" : "") +
+      "0x" +
+      (binaryValue < 0n ? (-binaryValue) : binaryValue).toString(16).toUpperCase();
+    try {
+      const parsed = parseNumber(hexStr);
+      setParsedResult(parsed);
+      onMinimalBitWidthChange(parsed.minimalBitWidth);
+      setError(null);
+    } catch (err) {
+      console.error('Parsing error:', err);
+      setError((err as Error).message);
+      setParsedResult(null);
     }
-  }, [result]);
+  }, [binaryValue, onMinimalBitWidthChange]);
 
-  // Recalculate displayed representations when selectedBitWidth changes
   const displayRepresentation = parsedResult
     ? recalcRepresentation(parsedResult.decimal!, selectedBitWidth)
     : { binary: '', octal: '', hexadecimal: '', unsignedDecimal: 0 };
@@ -213,15 +205,8 @@ const ResultDisplay: React.FC = () => {
           </ErrorMessage>
         </Alert>
       )}
-      {result && parsedResult && (
+      {parsedResult && (
         <>
-          {/* BitWidthToggle control */}
-          <BitWidthToggle
-            selectedBitWidth={selectedBitWidth}
-            minimalBitWidth={parsedResult.minimalBitWidth}
-            onChange={(newWidth) => setSelectedBitWidth(newWidth)}
-          />
-          {/* Display the results based on selected bit width */}
           <Typography variant="body1" color="primary">
             Binary: {displayRepresentation.binary}
           </Typography>

@@ -1,7 +1,6 @@
 import React from 'react';
 import { Box, ToggleButton } from '@mui/material';
 import { styled } from '@mui/material/styles';
-import PubSub from 'pubsub-js';
 
 // Styled container for the binary display
 const BinaryContainer = styled(Box)(({ theme }) => ({
@@ -9,9 +8,9 @@ const BinaryContainer = styled(Box)(({ theme }) => ({
   flexDirection: 'column',
   alignItems: 'center',
   gap: theme.spacing(2),
-  maxWidth: '800px',
+  maxWidth: '600px', // Modified: Changed from 800px to 600px
   margin: '0 auto',
-  padding: theme.spacing(2),
+  padding: theme.spacing(1), // Modified: Changed from theme.spacing(2) to theme.spacing(1)
 }));
 
 // Styled row for bits
@@ -25,8 +24,8 @@ const BitRow = styled(Box)(({ theme }) => ({
 // Styled group for 8 bits
 const BitGroup = styled(Box)(({ theme }) => ({
   display: 'flex',
-  gap: theme.spacing(0.5),
-  marginRight: theme.spacing(2),
+  gap: 0, // Modified: Directly connected with no gap (originally theme.spacing(0.5))
+  marginRight: theme.spacing(0),
   '&:last-child': {
     marginRight: 0,
   },
@@ -34,19 +33,20 @@ const BitGroup = styled(Box)(({ theme }) => ({
 
 // Styled bit button
 const BitButton = styled(ToggleButton)(({ theme }) => ({
-  width: '32px',
-  height: '32px',
+  width: '36px',
+  height: '36px',
   padding: 0,
   border: `1px solid ${theme.palette.divider}`,
+  borderRadius: 0,
   '&.Mui-disabled': {
     opacity: 0.5,
     backgroundColor: theme.palette.action.disabledBackground,
   },
   '&.Mui-selected': {
-    backgroundColor: theme.palette.primary.main,
+    backgroundColor: theme.palette.primary.light,
     color: theme.palette.primary.contrastText,
     '&:hover': {
-      backgroundColor: theme.palette.primary.dark,
+      backgroundColor: theme.palette.primary.main,
     },
   },
 }));
@@ -58,56 +58,59 @@ const BitIndex = styled(Box)({
   marginTop: '4px',
 });
 
-interface BinaryUIProps {
+export interface BinaryUIProps {
   selectedBitWidth: number;
   value: bigint;
+  onChange: (value: bigint) => void;
 }
 
-const BinaryUI: React.FC<BinaryUIProps> = ({ selectedBitWidth, value }) => {
-  // Handle bit toggle
+const BinaryUI: React.FC<BinaryUIProps> = ({ selectedBitWidth, value = 0n, onChange }) => {
+  // Handle bit toggle, removed PubSub.publish call
   const handleBitToggle = (bitPosition: number) => {
-    const newValue = value ^ (1n << BigInt(bitPosition));
-    PubSub.publish('VALUE_CHANGED', { value: newValue });
+    const mask = 1n << BigInt(bitPosition);
+    const newValue = value ^ mask;
+    onChange(newValue);
   };
 
-  // Create array of bit positions
-  const upperBits = Array.from({ length: 32 }, (_, i) => i + 32).reverse();
-  const lowerBits = Array.from({ length: 32 }, (_, i) => i).reverse();
-
-  // Helper function to render bit groups
-  const renderBitGroup = (bits: number[], disabled: boolean) => {
-    return bits.reduce((acc: JSX.Element[], bit, index) => {
-      if (index % 8 === 0) {
-        acc.push(
-          <BitGroup key={`group-${bit}`}>
-            {bits.slice(index, index + 8).map((position) => (
-              <Box key={position}>
-                <BitButton
-                  value={position}
-                  selected={!!(value & (1n << BigInt(position)))}
-                  onChange={() => handleBitToggle(position)}
-                  disabled={disabled || position >= selectedBitWidth}
-                >
-                  {!!(value & (1n << BigInt(position))) ? '1' : '0'}
-                </BitButton>
-                <BitIndex>{position}</BitIndex>
-              </Box>
-            ))}
-          </BitGroup>
-        );
-      }
-      return acc;
-    }, []);
+  // Updated getBit implementation using division and modulo to avoid implicit BigInt to number conversion
+  const getBit = (position: number): boolean => {
+    return (value / (1n << BigInt(position)) % 2n) === 1n;
   };
+
+  // Generate 64 bit positions in descending order and split into 4 rows of 16 bits each.
+  const allBits = Array.from({ length: 64 }, (_, i) => i).reverse();
+  const rows = [];
+  for (let i = 0; i < 64; i += 16) {
+    rows.push(allBits.slice(i, i + 16));
+  }
 
   return (
     <BinaryContainer>
-      <BitRow>
-        {renderBitGroup(upperBits, false)}
-      </BitRow>
-      <BitRow>
-        {renderBitGroup(lowerBits, false)}
-      </BitRow>
+      {rows.map((row, rowIdx) => {
+        // Divide each row into two groups, each group containing 8 bits
+        const groups = [row.slice(0, 8), row.slice(8, 16)];
+        return (
+          <BitRow key={rowIdx} sx={{ gap: 2 }}> {/* Set the gap between groups */}
+            {groups.map((group, groupIdx) => (
+              <BitGroup key={groupIdx}>
+                {group.map((position) => (
+                  <Box key={position}>
+                    <BitButton
+                      value={position.toString()}
+                      selected={getBit(position)}
+                      onChange={() => handleBitToggle(position)}
+                      disabled={position >= selectedBitWidth}
+                    >
+                      {getBit(position) ? '1' : '0'}
+                    </BitButton>
+                    <BitIndex>{position}</BitIndex>
+                  </Box>
+                ))}
+              </BitGroup>
+            ))}
+          </BitRow>
+        );
+      })}
     </BinaryContainer>
   );
 };
