@@ -34,93 +34,8 @@ interface ParsedResult {
   binary: string | null;
   octal: string | null;
   hexadecimal: string | null;
-  minimalBitWidth: number;
+  // minimalBitWidth: number;
 }
-
-// parseNumber now only supports hex formats ("0x" and "-0x")
-// const parseNumber = (result: string): ParsedResult => {
-//   console.log(result);
-//   let isNegative = false;
-//   let processedResult = result;
-
-//   // Check for and remove the negative sign
-//   if (processedResult.startsWith('-')) {
-//     isNegative = true;
-//     processedResult = processedResult.substring(1);
-//   }
-//   // Ensure result begins with "0x"
-//   if (!processedResult.startsWith('0x')) {
-//     throw new Error('Unexpected number format, expected hex prefix');
-//   }
-//   // Remove "0x" prefix and any underscores for readability
-//   const hexStr = processedResult.substring(2).replace(/_/g, '');
-//   const value = parseInt(hexStr, 16);
-
-//   // Determine the signed decimal.
-//   // If there is a negative prefix, simply apply it.
-//   // Otherwise, check if the hex number can be interpreted as negative
-//   // based on the candidate bit width determined by the hexStr length.
-//   let decimal: number;
-//   if (isNegative) {
-//     decimal = -value;
-//   } else {
-//     // Determine candidate bit width from hexStr length.
-//     let candidateBitWidth;
-//     if (hexStr.length <= 2) candidateBitWidth = 8;
-//     else if (hexStr.length <= 4) candidateBitWidth = 16;
-//     else if (hexStr.length <= 8) candidateBitWidth = 32;
-//     else candidateBitWidth = 64;
-
-//     // Calculate the half point for two's complement.
-//     const half = Math.pow(2, candidateBitWidth - 1);
-//     // If value is greater than or equal to half, it should be interpreted as negative.
-//     if (value >= half) {
-//       decimal = value - Math.pow(2, candidateBitWidth);
-//     } else {
-//       decimal = value;
-//     }
-//   }
-
-//   // Determine the minimal bit width required based on the interpreted decimal.
-//   const minimalBitWidth = getMinimalBitWidth(decimal);
-
-//   // Compute the unsigned decimal using two's complement based on minimalBitWidth.
-//   let unsignedDecimal: number;
-//   if (decimal < 0) {
-//     if (minimalBitWidth === 64) {
-//       unsignedDecimal = Number(BigInt(decimal) + (BigInt(1) << BigInt(64)));
-//     } else {
-//       unsignedDecimal = decimal + Math.pow(2, minimalBitWidth);
-//     }
-//   } else {
-//     unsignedDecimal = decimal;
-//   }
-
-//   // For display, initially use the minimal bit width representation.
-//   const display = recalcRepresentation(decimal, minimalBitWidth);
-
-//   return {
-//     decimal,
-//     unsignedDecimal,
-//     binary: display.binary,
-//     octal: display.octal,
-//     hexadecimal: display.hexadecimal,
-//     minimalBitWidth,
-//   };
-// };
-
-// Helper function to compute minimal bitWidth for given signed number
-const getMinimalBitWidth = (decimal: bigint): number => {
-  if (decimal >= -128 && decimal <= 127) {
-    return 8;
-  } else if (decimal >= -32768 && decimal <= 32767) {
-    return 16;
-  } else if (decimal >= -2147483648 && decimal <= 2147483647) {
-    return 32;
-  } else {
-    return 64;
-  }
-};
 
 // Recalculate representations based on given bitWidth (user-selected)
 const recalcRepresentation = (decimal: bigint, bitWidth: number) => {
@@ -143,24 +58,31 @@ const recalcRepresentation = (decimal: bigint, bitWidth: number) => {
   };
 };
 
-interface ResultDisplayProps {
-  selectedBitWidth: number;
-  onMinimalBitWidthChange: (width: number) => void;
-}
-
-const ResultDisplay: React.FC<ResultDisplayProps> = ({ selectedBitWidth, onMinimalBitWidthChange }) => {
+const ResultDisplay: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [parsedResult, setParsedResult] = useState<ParsedResult | null>(null);
-  const [inputValue, setInputValue] = useState<bigint | null>(0n);
+  const [selectedBitWidth, setSelectedBitWidth] = useState<number>(64);
 
   useEffect(() => {
     const token = PubSub.subscribe('CALCULATE_RESULT', (_msg: string, data: CalculateResultMessage) => {
-      const { hexResult, error } = data;
-      if (!error && hexResult !== null) {
-        setInputValue(hexResult);
-        setError(null)
+      const { bigIntResult, error, bitWidth } = data;
+      if (!error && bigIntResult !== null) {
+        try {
+          const display = recalcRepresentation(bigIntResult, bitWidth);
+          setParsedResult({
+            decimal: bigIntResult,
+            unsignedDecimal: display.unsignedDecimal,
+            binary: display.binary,
+            octal: display.octal,
+            hexadecimal: display.hexadecimal,
+          });
+          setSelectedBitWidth(bitWidth);
+          setError(null);
+        } catch (err) {
+          setError((err as Error).message);
+          setParsedResult(null);
+        }
       } else {
-        setInputValue(null);
         setError(error);
         setParsedResult(null);
       }
@@ -170,32 +92,6 @@ const ResultDisplay: React.FC<ResultDisplayProps> = ({ selectedBitWidth, onMinim
       PubSub.unsubscribe(token);
     };
   }, []);
-
-  // When binaryValue changes, convert it to a hex string and parse it.
-  useEffect(() => {
-    if (inputValue !== undefined && inputValue !== null) {
-      try {
-        // console.log("ResultDisplay, binaryValue:", binaryValue)
-        const minimalBitWidth = getMinimalBitWidth(inputValue);
-        const display = recalcRepresentation(inputValue, minimalBitWidth);
-        
-        setParsedResult({
-          decimal: inputValue,
-          unsignedDecimal: display.unsignedDecimal,
-          binary: display.binary,
-          octal: display.octal,
-          hexadecimal: display.hexadecimal,
-          minimalBitWidth,
-        });
-        onMinimalBitWidthChange(minimalBitWidth);
-        setError(null);
-      } catch (err) {
-        // console.error('Parsing error:', err);
-        setError((err as Error).message);
-        setParsedResult(null);
-      }
-    }
-  }, [inputValue, onMinimalBitWidthChange]);
 
   const displayRepresentation = parsedResult
     ? recalcRepresentation(parsedResult.decimal!, selectedBitWidth)

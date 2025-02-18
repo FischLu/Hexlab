@@ -1,6 +1,8 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ToggleButtonGroup, ToggleButton } from '@mui/material';
 import { styled } from '@mui/material/styles';
+import { CalculateResultMessage } from '../types';
+import { getMinimalBitWidth } from '../supportFunctions';
 
 // Reuse the same style as in Header
 const StyledToggleButton = styled(ToggleButton)(({ theme }) => ({
@@ -25,24 +27,37 @@ const StyledToggleButton = styled(ToggleButton)(({ theme }) => ({
   }
 }));
 
-interface BitWidthToggleProps {
-  selectedBitWidth: number;
-  minimalBitWidth: number;
-  onChange: (newBitWidth: number) => void;
-}
+const BitWidthToggle: React.FC = () => {
+  const [globalResult, setGlobalResult] = useState<bigint | null>(0n);
+  const [hasError, setHasError] = useState<boolean>(false);
+  const [minimalBitWidth, setMinimalBitWidth] = useState<number>(8);
+  const [selectedBitWidth, setSelectedBitWidth] = useState<number>(64);
 
-const BitWidthToggle: React.FC<BitWidthToggleProps> = ({ selectedBitWidth, minimalBitWidth, onChange }) => {
-  
-  // Automatically update selectedBitWidth if it falls below minimalBitWidth
   useEffect(() => {
-    if (selectedBitWidth < minimalBitWidth) {
-      onChange(minimalBitWidth);
-    }
-  }, [selectedBitWidth, minimalBitWidth, onChange]);
+    const token = PubSub.subscribe('CALCULATE_RESULT', (_msg: string, data: CalculateResultMessage) => {
+      const { bigIntResult, error, bitWidth } = data;
+      if (!error && bigIntResult !== null) {
+        setGlobalResult(bigIntResult);
+        setHasError(false);
+        setSelectedBitWidth(bitWidth);
+        const newMinimalBitWidth = getMinimalBitWidth(bigIntResult);
+        setMinimalBitWidth(newMinimalBitWidth);
+      } else {
+        setGlobalResult(null)
+        setHasError(true);
+      }
+    });
 
-  const handleChange = (_: React.MouseEvent<HTMLElement>, newValue: number | null) => {
+    return () => {
+      PubSub.unsubscribe(token);
+    };
+  }, []);
+
+  const handleChange = (_event: React.MouseEvent<HTMLElement>, newValue: number | null) => {
     if (newValue !== null) {
-      onChange(newValue);
+      setSelectedBitWidth(newValue);
+      const message: CalculateResultMessage = { bigIntResult: globalResult, error: null, bitWidth: newValue }
+      PubSub.publish('CALCULATE_RESULT', message);
     }
   };
 
@@ -59,7 +74,7 @@ const BitWidthToggle: React.FC<BitWidthToggleProps> = ({ selectedBitWidth, minim
       sx={{ alignSelf: 'center', mb: 2 }}
     >
       {options.map((width) => (
-        <StyledToggleButton key={width} value={width} disabled={width < minimalBitWidth}>
+        <StyledToggleButton key={width} value={width} disabled={hasError || width < minimalBitWidth}>
           {width}bit
         </StyledToggleButton>
       ))}

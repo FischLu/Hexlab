@@ -4,6 +4,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { Box, Button, TextField, ToggleButtonGroup, ToggleButton } from '@mui/material';
 import { styled } from '@mui/material/styles';
 import { CalculateResultMessage } from '../types';
+import { getMinimalBitWidth } from '../supportFunctions';
 
 // Container for the header elements
 const Container = styled(Box)(({ theme }) => ({
@@ -78,10 +79,11 @@ export default function Header() {
       // If the original string is negative, convert value to a negative number
       const finalValue = isNegative ? -value : value;
       // console.log("Header:", finalValue)
-      const message: CalculateResultMessage = { hexResult: finalValue, error: null }
+      const bitWidth = getMinimalBitWidth(finalValue)
+      const message: CalculateResultMessage = { bigIntResult: finalValue, error: null, bitWidth }
       PubSub.publish('CALCULATE_RESULT', message);
     } catch (err) {
-      const message: CalculateResultMessage = { hexResult: null, error: `Error: ${err}` }
+      const message: CalculateResultMessage = { bigIntResult: null, error: `Error: ${err}`, bitWidth: 8 }
       PubSub.publish('CALCULATE_RESULT', message);
     }
   };

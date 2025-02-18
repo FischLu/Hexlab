@@ -1,4 +1,5 @@
 export interface CalculateResultMessage {
-  hexResult: bigint | null;
+  bigIntResult: bigint | null;
+  bitWidth: number;
   error: string | null;
 }

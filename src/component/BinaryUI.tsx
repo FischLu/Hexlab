@@ -61,43 +61,35 @@ const BitIndex = styled(Box)({
   marginTop: '4px',
 });
 
-export interface BinaryUIProps {
-  selectedBitWidth: number;
-}
-
-const BinaryUI: React.FC<BinaryUIProps> = ({ selectedBitWidth }) => {
-  const [globalResult, setGlobalResult] = useState<bigint | null>(0n);
+const BinaryUI: React.FC = () => {
   const [complementResult, setComplementResult] = useState<bigint | null>(0n); // 补码 state
   const [hasError, setHasError] = useState<boolean>(false);
+  const [selectedBitWidth, setSelectedBitWidth] = useState<number>(64);
+
   useEffect(() => {
-    const token = PubSub.subscribe('CALCULATE_RESULT', (_msg: string, data: CalculateResultMessage) => {
-      const { hexResult, error } = data;
-      if (!error && hexResult !== null) {
-        setGlobalResult(hexResult);
+    const calculateToken = PubSub.subscribe('CALCULATE_RESULT', (_msg: string, data: CalculateResultMessage) => {
+      const { bigIntResult, error, bitWidth } = data;
+      
+      if (!error && bigIntResult !== null) {
         setHasError(false);
+        setSelectedBitWidth(bitWidth);
+        
+        // Calculate complement immediately
+        let comp = bigIntResult;
+        if (bigIntResult < 0) {
+          comp = bigIntResult + (1n << BigInt(bitWidth));
+        }
+        setComplementResult(comp);
       } else {
-        // console.error(error);
-        setGlobalResult(null)
         setHasError(true);
+        setComplementResult(null);
       }
     });
 
     return () => {
-      PubSub.unsubscribe(token);
+      PubSub.unsubscribe(calculateToken);
     };
   }, []);
-
-  useEffect(() => {
-    if (globalResult === null) {
-      setComplementResult(null);
-    } else {
-      let comp = globalResult;
-      if (globalResult < 0) {
-        comp = globalResult + (1n << BigInt(selectedBitWidth));
-      }
-      setComplementResult(comp);
-    }
-  }, [globalResult, selectedBitWidth]);
 
   const handleBitToggle = (bitPosition: number) => {
     if (complementResult === null) return;
@@ -109,8 +101,9 @@ const BinaryUI: React.FC<BinaryUIProps> = ({ selectedBitWidth }) => {
     } else {
       newValue = newCompl;
     }
-    const message: CalculateResultMessage = { hexResult: newValue, error: null };
-    PubSub.publish('CALCULATE_RESULT', message);
+
+    const message: CalculateResultMessage = { bigIntResult: newValue, error: null, bitWidth: selectedBitWidth }
+      PubSub.publish('CALCULATE_RESULT', message);
   };
 
   const getBit = (position: number): boolean => {
