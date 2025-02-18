@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react";
+import PubSub from 'pubsub-js';
 import { invoke } from "@tauri-apps/api/core";
 import { Box, Button, TextField, ToggleButtonGroup, ToggleButton } from '@mui/material';
 import { styled } from '@mui/material/styles';
+import { CalculateResultMessage } from '../types';
 
 // Container for the header elements
 const Container = styled(Box)(({ theme }) => ({
@@ -53,11 +55,7 @@ const StyledTextField = styled(TextField)(() => ({
   }
 }));
 
-interface HeaderProps {
-  onCalculate: (hexResult: string, error: string | null) => void;
-}
-
-export default function Header({ onCalculate }: HeaderProps) {
+export default function Header() {
   const [expression, setExpression] = useState('');
   const [mode, setMode] = useState('hex'); // 'dec' or 'hex'
 
@@ -67,10 +65,24 @@ export default function Header({ onCalculate }: HeaderProps) {
         exprStr: expression,
         options: { mode }
       });
-      // Directly pass the result through the callback
-      onCalculate(res, null);
+      // Process hexadecimal strings with a negative sign
+      let isNegative = false;
+      let processedRes = res;
+      if (processedRes.startsWith('-')) {
+        isNegative = true;
+        processedRes = processedRes.substring(1);
+      }
+      
+       // Create a BigInt using the processed string
+      const value = BigInt(processedRes);
+      // If the original string is negative, convert value to a negative number
+      const finalValue = isNegative ? -value : value;
+      // console.log("Header:", finalValue)
+      const message: CalculateResultMessage = { hexResult: finalValue, error: null }
+      PubSub.publish('CALCULATE_RESULT', message);
     } catch (err) {
-      onCalculate("", `Error: ${err}`);
+      const message: CalculateResultMessage = { hexResult: null, error: `Error: ${err}` }
+      PubSub.publish('CALCULATE_RESULT', message);
     }
   };
 

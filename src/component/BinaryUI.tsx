@@ -1,6 +1,9 @@
 import React from 'react';
 import { Box, ToggleButton } from '@mui/material';
 import { styled } from '@mui/material/styles';
+import { useEffect, useState } from 'react';
+import PubSub from 'pubsub-js';
+import { CalculateResultMessage } from '../types';
 
 // Styled container for the binary display
 const BinaryContainer = styled(Box)(({ theme }) => ({
@@ -60,21 +63,61 @@ const BitIndex = styled(Box)({
 
 export interface BinaryUIProps {
   selectedBitWidth: number;
-  value: bigint;
-  onChange: (value: bigint) => void;
 }
 
-const BinaryUI: React.FC<BinaryUIProps> = ({ selectedBitWidth, value = 0n, onChange }) => {
-  // Handle bit toggle, removed PubSub.publish call
+const BinaryUI: React.FC<BinaryUIProps> = ({ selectedBitWidth }) => {
+  const [globalResult, setGlobalResult] = useState<bigint | null>(0n);
+  const [complementResult, setComplementResult] = useState<bigint | null>(0n); // 补码 state
+  const [hasError, setHasError] = useState<boolean>(false);
+  useEffect(() => {
+    const token = PubSub.subscribe('CALCULATE_RESULT', (_msg: string, data: CalculateResultMessage) => {
+      const { hexResult, error } = data;
+      if (!error && hexResult !== null) {
+        setGlobalResult(hexResult);
+        setHasError(false);
+      } else {
+        // console.error(error);
+        setGlobalResult(null)
+        setHasError(true);
+      }
+    });
+
+    return () => {
+      PubSub.unsubscribe(token);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (globalResult === null) {
+      setComplementResult(null);
+    } else {
+      let comp = globalResult;
+      if (globalResult < 0) {
+        comp = globalResult + (1n << BigInt(selectedBitWidth));
+      }
+      setComplementResult(comp);
+    }
+  }, [globalResult, selectedBitWidth]);
+
   const handleBitToggle = (bitPosition: number) => {
+    if (complementResult === null) return;
     const mask = 1n << BigInt(bitPosition);
-    const newValue = value ^ mask;
-    onChange(newValue);
+    const newCompl = complementResult ^ mask;
+    let newValue: bigint;
+    if (newCompl >= (1n << BigInt(selectedBitWidth - 1))) {
+      newValue = newCompl - (1n << BigInt(selectedBitWidth));
+    } else {
+      newValue = newCompl;
+    }
+    const message: CalculateResultMessage = { hexResult: newValue, error: null };
+    PubSub.publish('CALCULATE_RESULT', message);
   };
 
-  // Updated getBit implementation using division and modulo to avoid implicit BigInt to number conversion
   const getBit = (position: number): boolean => {
-    return (value / (1n << BigInt(position)) % 2n) === 1n;
+    if (complementResult === null)
+      return false;
+
+    return (complementResult / (1n << BigInt(position)) % 2n) === 1n;
   };
 
   // Generate 64 bit positions in descending order and split into 4 rows of 16 bits each.
@@ -93,19 +136,22 @@ const BinaryUI: React.FC<BinaryUIProps> = ({ selectedBitWidth, value = 0n, onCha
           <BitRow key={rowIdx} sx={{ gap: 2 }}> {/* Set the gap between groups */}
             {groups.map((group, groupIdx) => (
               <BitGroup key={groupIdx}>
-                {group.map((position) => (
-                  <Box key={position}>
-                    <BitButton
-                      value={position.toString()}
-                      selected={getBit(position)}
-                      onChange={() => handleBitToggle(position)}
-                      disabled={position >= selectedBitWidth}
-                    >
-                      {getBit(position) ? '1' : '0'}
-                    </BitButton>
-                    <BitIndex>{position}</BitIndex>
-                  </Box>
-                ))}
+                {group.map((position) => {
+                  const isDisabled = position >= selectedBitWidth || hasError;
+                  return (
+                    <Box key={position}>
+                      <BitButton
+                        value={position.toString()}
+                        selected={!hasError && !isDisabled && getBit(position)}
+                        onChange={() => handleBitToggle(position)}
+                        disabled={isDisabled}
+                      >
+                        {isDisabled ? '0' : (getBit(position) ? '1' : '0')}
+                      </BitButton>
+                      <BitIndex>{position}</BitIndex>
+                    </Box>
+                  );
+                })}
               </BitGroup>
             ))}
           </BitRow>
