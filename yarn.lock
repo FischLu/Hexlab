@@ -2267,31 +2267,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"cork_ui@workspace:.":
-  version: 0.0.0-use.local
-  resolution: "cork_ui@workspace:."
-  dependencies:
-    "@chakra-ui/react": "npm:^3.8.0"
-    "@emotion/react": "npm:^11.14.0"
-    "@emotion/styled": "npm:^11.14.0"
-    "@mui/icons-material": "npm:^6.4.5"
-    "@mui/material": "npm:^6.4.4"
-    "@tauri-apps/api": "npm:^2"
-    "@tauri-apps/cli": "npm:^2"
-    "@tauri-apps/plugin-opener": "npm:^2"
-    "@types/pubsub-js": "npm:^1"
-    "@types/react": "npm:^18.3.1"
-    "@types/react-dom": "npm:^18.3.1"
-    "@vitejs/plugin-react": "npm:^4.3.4"
-    framer-motion: "npm:^12.4.2"
-    pubsub-js: "npm:^1.9.5"
-    react: "npm:^18.3.1"
-    react-dom: "npm:^18.3.1"
-    typescript: "npm:~5.6.2"
-    vite: "npm:^6.0.3"
-  languageName: unknown
-  linkType: soft
-
 "cosmiconfig@npm:^7.0.0":
   version: 7.1.0
   resolution: "cosmiconfig@npm:7.1.0"
@@ -2631,6 +2606,31 @@ __metadata:
   checksum: 10c0/3769d434703b8ac66b209a4cca0737519925bbdb61dd887f93a16372b14694c63ff4e797686d87c90f08168e81082248b9b028bad60d4da9e0d1148766f56eb9
   languageName: node
   linkType: hard
+
+"hexlab@workspace:.":
+  version: 0.0.0-use.local
+  resolution: "hexlab@workspace:."
+  dependencies:
+    "@chakra-ui/react": "npm:^3.8.0"
+    "@emotion/react": "npm:^11.14.0"
+    "@emotion/styled": "npm:^11.14.0"
+    "@mui/icons-material": "npm:^6.4.5"
+    "@mui/material": "npm:^6.4.4"
+    "@tauri-apps/api": "npm:^2"
+    "@tauri-apps/cli": "npm:^2"
+    "@tauri-apps/plugin-opener": "npm:^2"
+    "@types/pubsub-js": "npm:^1"
+    "@types/react": "npm:^18.3.1"
+    "@types/react-dom": "npm:^18.3.1"
+    "@vitejs/plugin-react": "npm:^4.3.4"
+    framer-motion: "npm:^12.4.2"
+    pubsub-js: "npm:^1.9.5"
+    react: "npm:^18.3.1"
+    react-dom: "npm:^18.3.1"
+    typescript: "npm:~5.6.2"
+    vite: "npm:^6.0.3"
+  languageName: unknown
+  linkType: soft
 
 "hoist-non-react-statics@npm:^3.3.1":
   version: 3.3.2

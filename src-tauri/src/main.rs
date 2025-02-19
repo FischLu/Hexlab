@@ -2,5 +2,5 @@
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 fn main() {
-    cork_ui_lib::run()
+    hexlab_lib::run()
 }

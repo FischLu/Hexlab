@@ -128,14 +128,22 @@ export default function Header() {
             Dec mode
           </StyledToggleButton>
         </ToggleButtonGroup>
-        <Tooltip title={
-          <div style={{ fontSize: '0.95rem' }}>
-            <p><strong>Hex mode:</strong> Input numbers without prefix will be trated as Hexadecimal number</p>
-            <p><strong>Dec mode:</strong> Input numbers without prefix will be trated as Decimal number</p>
-            <p>Supported prefixes in both modes: 0x (hex), 0d (decimal), 0o (octal), 0b (binary)</p>
-          </div>
-        }>
-          <IconButton size="small">
+          <Tooltip title={
+            <div style={{ fontSize: '0.95rem' }}>
+              <p><strong>Hex mode:</strong> Input numbers without prefix will be parsed as Hexadecimal number</p>
+              <p><strong>Dec mode:</strong> Input numbers without prefix will be parsed as Decimal number</p>
+              <p>Supported prefixes in both modes: 0x (hex), 0d (decimal), 0o (octal), 0b (binary)</p>
+            </div>
+          }>
+          <IconButton 
+            size="small"
+            sx={{ 
+              padding: '4px',
+              '& .MuiSvgIcon-root': {
+                fontSize: '16px', 
+              }
+            }}
+          >
             <HelpOutlineIcon fontSize="small" />
           </IconButton>
         </Tooltip>

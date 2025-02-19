@@ -716,29 +716,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "cork_ui"
-version = "0.1.0"
-dependencies = [
- "anyhow",
- "clap",
- "colored",
- "getset",
- "home",
- "once_cell",
- "pest",
- "pest_derive",
- "rustyline",
- "serde",
- "serde_json",
- "serde_yaml",
- "strum",
- "tauri",
- "tauri-build",
- "tauri-plugin-opener",
- "thiserror 2.0.11",
-]
-
-[[package]]
 name = "cpufeatures"
 version = "0.2.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1648,6 +1625,29 @@ name = "hex"
 version = "0.4.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7f24254aa9a54b5c858eaee2f5bccdb46aaf0e486a595ed5fd8f86ba55232a70"
+
+[[package]]
+name = "hexlab"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "colored",
+ "getset",
+ "home",
+ "once_cell",
+ "pest",
+ "pest_derive",
+ "rustyline",
+ "serde",
+ "serde_json",
+ "serde_yaml",
+ "strum",
+ "tauri",
+ "tauri-build",
+ "tauri-plugin-opener",
+ "thiserror 2.0.11",
+]
 
 [[package]]
 name = "home"
