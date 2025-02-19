@@ -1,0 +1,62 @@
+name: Test
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    runs-on: ${{matrix.platform}}
+    strategy:
+      matrix:
+        include:
+          - platform: 'macos-latest' # for Arm based macs (M1 and above).
+            args: '--target aarch64-apple-darwin'
+          - platform: 'macos-latest' # for Intel based macs.
+            args: '--target x86_64-apple-darwin'
+          - platform: 'ubuntu-22.04' 
+            args: ''
+          - platform: 'windows-latest'
+            args: ''
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Enable Corepack
+      if: matrix.platform != 'windows-latest'
+      run: corepack enable
+    
+
+    - name: setup node
+      uses: actions/setup-node@v4
+      with:
+        node-version: 20
+    - name: Setup Corepack and Yarn (Windows)
+      if: matrix.platform == 'windows-latest' 
+      shell: pwsh
+      run: |
+        corepack enable && corepack prepare yarn@4.3.1 --activate
+        yarn --version
+
+    - name: install Rust stable
+      uses: dtolnay/rust-toolchain@stable
+    - name: install dependencies (ubuntu only)
+      if: matrix.platform == 'ubuntu-22.04' 
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y libwebkit2gtk-4.0-dev libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+    - name: Build
+      working-directory: src-tauri
+      run: cargo build --release --verbose
+    - name: Run tests
+      working-directory: src-tauri
+      run: cargo test --verbose
+    - name: install frontend dependencies
+      run: yarn install 
+    - name: tauri build
+      run: yarn tauri build --no-bundle

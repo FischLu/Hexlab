@@ -1,5 +1,7 @@
 use super::eval::*;
 use super::*;
+use anyhow::Error;
+
 impl Expr {
     pub fn new_num(value: i64) -> Self {
         Expr::Num(value, Radix::Dec)
@@ -349,51 +351,51 @@ fn test_tor_directive_eval() {
 
     let expr5_str = "(5 + 6) * 2 to nonex";
     let result = parse_line(expr5_str, &config).unwrap_err();
-    let expected = CorkError::Parse(Box::new(PestError::new_from_pos(
+    let expected: Error = PestError::new_from_pos(
         PestVariant::ParsingError {
             positives: vec![Rule::radix],
             negatives: vec![],
         },
         Position::new(expr5_str, 15).unwrap(),
-    )));
+    ).into();
 
-    let not_expected = CorkError::Parse(Box::new(PestError::new_from_pos(
+    let not_expected: Error = PestError::new_from_pos(
         PestVariant::ParsingError {
             positives: vec![Rule::EOI],
             negatives: vec![],
         },
         Position::new(expr5_str, 18).unwrap(),
-    )));
+    ).into();
 
     // Checks error on non-existent radix, must return a wrong radix error
-    assert_eq!(expected, result);
+    assert_eq!(expected.to_string(), result.to_string());
 
     // Checks error on non-existent radix, must not return an 'expected EOI' error
-    assert_ne!(not_expected, result);
+    assert_ne!(not_expected.to_string(), result.to_string());
 
     let expr6_str = "(5 + 6) * 2 to decimal";
     let result = parse_line(expr6_str, &config).unwrap_err();
-    let expected = CorkError::Parse(Box::new(PestError::new_from_pos(
+    let expected: Error = PestError::new_from_pos(
         PestVariant::ParsingError {
             positives: vec![Rule::EOI],
             negatives: vec![],
         },
         Position::new(expr6_str, 18).unwrap(),
-    )));
+    ).into();
 
-    let not_expected = CorkError::Parse(Box::new(PestError::new_from_pos(
+    let not_expected: Error = PestError::new_from_pos(
         PestVariant::ParsingError {
             positives: vec![Rule::radix],
             negatives: vec![],
         },
         Position::new(expr6_str, 15).unwrap(),
-    )));
+    ).into();
 
     // Checks error on a missing EOI after the radix, must return an 'expected EOI' error
-    assert_eq!(expected, result);
+    assert_eq!(expected.to_string(), result.to_string());
 
     // Checks error on a missing EOI after the radix, must not return a wrong radix error
-    assert_ne!(not_expected, result);
+    assert_ne!(not_expected.to_string(), result.to_string());
 }
 
 #[test]
@@ -453,7 +455,7 @@ fn test_convert_output() {
                     .with_format_radix(conversion.radix())
                     .fmt(conversion.value(0).unwrap())
             );
-            assert_eq!(result, "\"0b1111111\"");
+            assert_eq!(result, "\"0b111_1111\"");
         }
         _ => panic!("Should have parsed to a conversion"),
     };

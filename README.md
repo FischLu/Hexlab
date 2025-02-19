@@ -25,13 +25,13 @@
 Hexlab is a calculator designed for programmers, supporting common calculations and allowing individual bit toggling.
 ## History
 
-As a reverse security researcher, I frequently need to calculate various hexadecimal offsets and masks. While the operating system's built-in calculator can handle these tasks, it's often cumbersome to use - it's difficult to input long expressions, the binary bit display is too small and hard to click, and there's no way to change the bit width of the current display results. Later, I discovered [Cork](https://github.com/RedDocMD/cork), a terminal command-line program that mostly met my needs. However, I often needed to perform bit-flipping calculations, and I wished I could toggle individual bits with a simple click. One boring afternoon, after learning about the Tauri framework, I decided to add a GUI interface to Cork, and that's how Hexlab was born. While gaining a GUI interface, I also maintained the command-line interface, which is still called Cork.
+As a security researcher, I frequently need to calculate various hexadecimal offsets and masks. While the operating system's built-in calculator can handle these tasks, it's often cumbersome to use - it's difficult to input long expressions, the binary bit display is too small and hard to click, and there's no way to change the bit width of the current display results. Later, I discovered [Cork](https://github.com/RedDocMD/cork), a terminal command-line program that mostly met my needs. However, I often needed to perform bit-flipping calculations, and I wished I could toggle individual bits with a simple click. One boring afternoon, after learning about the Tauri framework, I decided to add a GUI interface to Cork, and that's how Hexlab was born. While gaining a GUI interface, I also maintained the command-line interface, which is still called Cork.
 
 ## Installation
 
 ### Prebuilt binary
 
-For MacOS, you can download a pre-built binary [here]().
+You can download a pre-built binary [here]().
 
 ### Build from source
 

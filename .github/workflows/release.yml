@@ -1,50 +1,118 @@
-name: Release Assets
+name: Release
 
 on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag (e.g. v1.0.0)'
+        required: true
+        default: 'v0.1.0'
   push:
-    tags: ["v[0-9]+.[0-9]+.[0-9]+*"]
+    tags:
+      - v*.*.*
 
-env:
-  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  CARGO_TERM_COLOR: always
+permissions:
+  contents: write
 
 jobs:
-  linux:
-    runs-on: ubuntu-latest
+  release:
+    runs-on: ${{matrix.platform}}
+    strategy:
+      matrix:
+        include:
+          - platform: 'macos-latest' # for Arm based macs (M1 and above).
+            args: '--target aarch64-apple-darwin'
+          - platform: 'macos-latest' # for Intel based macs.
+            args: '--target x86_64-apple-darwin'
+          - platform: 'ubuntu-22.04' 
+            args: ''
+          - platform: 'windows-latest'
+            args: ''
+      fail-fast: false
 
     steps:
-      - uses: actions/checkout@v3
-      - uses: dtolnay/rust-toolchain@stable
-      - name: Test
-        run: cargo test --release
-      - name: Build
-        run: cargo build --release
-      - name: Install Python dependencies
+      - uses: actions/checkout@v4
+      - name: Get tag (Non-Windows)
+        id: get-tag
+        if: matrix.platform != 'windows-latest'
         run: |
-          python3 -m pip install gitpython termcolor requests
-      - name: Upload Assets
+          if [ "${GITHUB_EVENT_NAME}" = "workflow_dispatch" ]; then
+            echo "tag=${{ github.event.inputs.tag }}" >> $GITHUB_OUTPUT
+          else
+            TAG_REF=${GITHUB_REF##*/}
+            echo "tag=${TAG_REF}" >> $GITHUB_OUTPUT
+          fi
+      - name: Get tag (Windows)
+        id: get-tag-win
+        if: matrix.platform == 'windows-latest'
+        shell: pwsh
         run: |
-          python3 .github/workflows/make_release.py target/release/cork $GITHUB_TOKEN
-  
-  windows:
-    runs-on: windows-latest
+          if ($env:GITHUB_EVENT_NAME -eq "workflow_dispatch") {
+            "tag=${{ github.event.inputs.tag }}" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+          } else {
+            $TAG_REF = $env:GITHUB_REF.Substring($env:GITHUB_REF.LastIndexOf('/') + 1)
+            "tag=$TAG_REF" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+          }
 
-    defaults:
-      run:
-        shell: bash
-    
-    steps:
-      - uses: actions/checkout@v3
-      - uses: dtolnay/rust-toolchain@stable
-      - name: Test
-        run: cargo test --release
-      - name: Build
-        run: cargo build --release
-      - name: Install Python dependencies
+      - name: Enable Corepack
+        if: matrix.platform != 'windows-latest'
+        run: corepack enable
+
+      - name: setup node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Setup Corepack and Yarn (Windows)
+        if: matrix.platform == 'windows-latest' 
+        shell: pwsh
         run: |
-          python3 -m pip install gitpython termcolor requests
-      - name: Upload portable executable
+          corepack enable && corepack prepare yarn@4.3.1 --activate
+          yarn --version
+
+      - name: install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+      - name: install dependencies (ubuntu only)
+        if: matrix.platform == 'ubuntu-22.04'
         run: |
-          cp target/release/cork.exe ./cork-${GITHUB_REF##*/}-portable.exe
-          python3 .github/workflows/make_release.py \
-            ./cork-${GITHUB_REF##*/}-portable.exe $GITHUB_TOKEN
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.0-dev libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+      - name: install frontend dependencies
+        run: yarn install 
+      - name: tauri build for macos and ubuntu
+        if: matrix.platform != 'windows-latest'
+        run: yarn tauri build
+      - name: tauri build windows
+        if: matrix.platform == 'windows-latest'
+        run: yarn tauri build --no-bundle
+      - name: Rename dmg file for Intel based mac
+        if: matrix.platform == 'macos-latest' && contains(matrix.args, 'x86_64-apple-darwin')
+        run: |
+          TAG=${{ steps.get-tag.outputs.tag }}
+          # If the TAG has a 'v' prefix, remove it
+          TAG_NUMBER=${TAG#v}
+          mv src-tauri/target/release/bundle/dmg/hexlab_${TAG_NUMBER}_aarch64.dmg \
+             src-tauri/target/release/bundle/dmg/hexlab_${TAG_NUMBER}_x86_64.dmg
+      - name: Rename exe file for Windows
+        if: matrix.platform == 'windows-latest'
+        shell: pwsh
+        run: |
+          $TAG = "${{ steps.get-tag-win.outputs.tag }}"
+          # If the TAG has a 'v' prefix, remove it
+          if ($TAG.StartsWith('v')) { $TAG = $TAG.Substring(1) }
+          Rename-Item -Path src-tauri/target/release/hexlab.exe -NewName "hexlab_${TAG}_x86_64.exe"
+
+      - name: Release
+        uses: ncipollo/release-action@v1
+        with:
+          draft: true
+          allowUpdates: true
+          makeLatest: false
+          tag: ${{ matrix.platform == 'windows-latest' && steps['get-tag-win'].outputs.tag || steps['get-tag'].outputs.tag }}
+          artifacts: |
+            src-tauri/target/release/bundle/*/*.dmg, 
+            src-tauri/target/release/bundle/*/*.rpm,
+            src-tauri/target/release/bundle/*/*.deb,
+            src-tauri/target/release/bundle/*/*.AppImage,
+            src-tauri/target/release/*.exe
+
+          token: ${{ secrets.GITHUB_TOKEN }}
