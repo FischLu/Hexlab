@@ -11,8 +11,11 @@ const ResultBox = styled(Box)(({ theme }) => ({
   borderRadius: 10,
   maxWidth: '600px',
   minWidth: '440px',
-  minHeight: '130px',
-  margin: '0 auto'
+  height: '150px',
+  margin: '0 auto',
+  display: 'flex',
+  flexDirection: 'column',
+  justifyContent: 'center'
 }));
 
 const ErrorMessage = styled(Typography)(() => ({
@@ -34,7 +37,6 @@ interface ParsedResult {
   binary: string | null;
   octal: string | null;
   hexadecimal: string | null;
-  // minimalBitWidth: number;
 }
 
 // Recalculate representations based on given bitWidth (user-selected)

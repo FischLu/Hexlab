@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import PubSub from 'pubsub-js';
 import { invoke } from "@tauri-apps/api/core";
-import { Box, Button, TextField, ToggleButtonGroup, ToggleButton } from '@mui/material';
+import { Box, Button, TextField, ToggleButtonGroup, ToggleButton, IconButton, Tooltip } from '@mui/material';
+import HelpOutlineIcon from '@mui/icons-material/HelpOutline';
 import { styled } from '@mui/material/styles';
 import { CalculateResultMessage } from '../types';
 import { getMinimalBitWidth } from '../supportFunctions';
@@ -112,21 +113,33 @@ export default function Header() {
 
   return (
     <Container>
-      <ToggleButtonGroup
-        value={mode}
-        exclusive
-        onChange={handleModeChange}
-        aria-label="calculation mode"
-        size="small"
-        sx={{ alignSelf: 'center' }}
-      >
-        <StyledToggleButton value="hex" aria-label="hexadecimal mode">
-          Hex mode
-        </StyledToggleButton>
-        <StyledToggleButton value="dec" aria-label="decimal mode">
-          Dec mode
-        </StyledToggleButton>
-      </ToggleButtonGroup>
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        <ToggleButtonGroup
+          value={mode}
+          exclusive
+          onChange={handleModeChange}
+          aria-label="calculation mode"
+          size="small"
+        >
+          <StyledToggleButton value="hex" aria-label="hexadecimal mode">
+            Hex mode
+          </StyledToggleButton>
+          <StyledToggleButton value="dec" aria-label="decimal mode">
+            Dec mode
+          </StyledToggleButton>
+        </ToggleButtonGroup>
+        <Tooltip title={
+          <div style={{ fontSize: '0.95rem' }}>
+            <p><strong>Hex mode:</strong> Input numbers without prefix will be trated as Hexadecimal number</p>
+            <p><strong>Dec mode:</strong> Input numbers without prefix will be trated as Decimal number</p>
+            <p>Supported prefixes in both modes: 0x (hex), 0d (decimal), 0o (octal), 0b (binary)</p>
+          </div>
+        }>
+          <IconButton size="small">
+            <HelpOutlineIcon fontSize="small" />
+          </IconButton>
+        </Tooltip>
+      </Box>
 
       <Box display="flex" alignItems="center" gap={2}>
         <StyledTextField

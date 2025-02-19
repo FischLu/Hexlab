@@ -1,11 +1,7 @@
-use std::sync::MutexGuard;
-use std::collections::HashMap;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use crate::{
     format::{FormatRadix, OutputFormat},
-    options::Options,
     expression,
-    config::Config,
     CONFIG,
 };
 

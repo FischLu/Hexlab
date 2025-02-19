@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "cork_ui",
+        "title": "Cork UI Calculator",
         "width": 650,
         "height": 780,
         "resizable": false
