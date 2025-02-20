@@ -31,7 +31,7 @@ As a security researcher, I frequently need to calculate various hexadecimal off
 
 ### Prebuilt binary
 
-You can download a pre-built binary [here]().
+You can download a pre-built binary [here](https://github.com/FischLu/Hexlab/releases).
 
 ### Build from source
 
