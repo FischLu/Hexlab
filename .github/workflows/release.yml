@@ -117,7 +117,7 @@ jobs:
 
           token: ${{ secrets.GITHUB_TOKEN }}
       
-      - name: clean up:
+      - name: clean up
         if: matrix.platform == 'macos-latest' && contains(matrix.args, 'x86_64-apple-darwin')
         run: |
           TAG=${{ steps.get-tag.outputs.tag }}
