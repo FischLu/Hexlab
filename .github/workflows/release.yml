@@ -116,3 +116,11 @@ jobs:
             src-tauri/target/release/*.exe
 
           token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: clean up:
+        if: matrix.platform == 'macos-latest' && contains(matrix.args, 'x86_64-apple-darwin')
+        run: |
+          TAG=${{ steps.get-tag.outputs.tag }}
+          # If the TAG has a 'v' prefix, remove it
+          TAG_NUMBER=${TAG#v}
+          rm src-tauri/target/release/bundle/dmg/hexlab_${TAG_NUMBER}_x86_64.dmg
