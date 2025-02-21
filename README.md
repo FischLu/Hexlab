@@ -2,6 +2,7 @@
 
 ![version](https://img.shields.io/badge/version-0.1.0-blue)
 ![license](https://img.shields.io/badge/license-GPL--2.0-green)
+[![Test](https://github.com/FischLu/Hexlab/actions/workflows/ci.yml/badge.svg)](https://github.com/FischLu/Hexlab/actions/workflows/ci.yml)
 
 - [Hexlab](#Hexlab)
   - [History](#history)
