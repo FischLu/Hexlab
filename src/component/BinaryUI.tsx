@@ -74,11 +74,9 @@ const BinaryUI: React.FC = () => {
         setHasError(false);
         setSelectedBitWidth(bitWidth);
         
-        // Calculate complement immediately
-        let comp = bigIntResult;
-        if (bigIntResult < 0) {
-          comp = bigIntResult + (1n << BigInt(bitWidth));
-        }
+        // Calculate complement (unsigned pattern) truncated to lower bitWidth bits
+        const modulo = 1n << BigInt(bitWidth);
+        const comp = ((bigIntResult % modulo) + modulo) % modulo;
         setComplementResult(comp);
       } else {
         setHasError(true);

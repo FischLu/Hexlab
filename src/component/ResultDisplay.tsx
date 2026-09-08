@@ -42,9 +42,23 @@ interface ParsedResult {
 // Recalculate representations based on given bitWidth (user-selected)
 const recalcRepresentation = (decimal: bigint, bitWidth: number) => {
   const bitWidthBig = BigInt(bitWidth);
-  const unsignedValue = decimal < 0n ? 
-    decimal + (1n << bitWidthBig) : 
-    decimal;
+  const modulo = 1n << bitWidthBig;
+  // Truncate to lower bitWidth bits to preserve bit pattern when switching widths
+  const unsignedValue = ((decimal % modulo) + modulo) % modulo;
+  // Reinterpret as signed for current width (e.g. 0xFFFD6D64 in 32 bits -> -168604)
+  let signedValue = unsignedValue;
+  if (bitWidth < 64) {
+    const signBit = 1n << BigInt(bitWidth - 1);
+    if (unsignedValue >= signBit) {
+      signedValue = unsignedValue - modulo;
+    }
+  } else {
+    // 64-bit: values come from i64, so unsigned >= 2^63 would mean negative
+    const signBit64 = 1n << 63n;
+    if (unsignedValue >= signBit64 && decimal < 0n) {
+      signedValue = unsignedValue - modulo;
+    }
+  }
 
   const binary = unsignedValue.toString(2).padStart(Number(bitWidth), '0');
   const hexLength = Math.ceil(Number(bitWidth) / 4);
@@ -53,6 +67,7 @@ const recalcRepresentation = (decimal: bigint, bitWidth: number) => {
   const octal = unsignedValue.toString(8).padStart(octLength, '0');
 
   return {
+    signedValue,
     unsignedDecimal: Number(unsignedValue),
     binary,
     octal,
@@ -97,7 +112,7 @@ const ResultDisplay: React.FC = () => {
 
   const displayRepresentation = parsedResult
     ? recalcRepresentation(parsedResult.decimal!, selectedBitWidth)
-    : { binary: '', octal: '', hexadecimal: '', unsignedDecimal: 0 };
+    : { binary: '', octal: '', hexadecimal: '', unsignedDecimal: 0, signedValue: 0n };
 
   return (
     <ResultBox>
@@ -117,7 +132,7 @@ const ResultDisplay: React.FC = () => {
             Octal: {displayRepresentation.octal}
           </Typography>
           <Typography className="selectable-text" variant="body1" color="textPrimary">
-            Signed Decimal: {parsedResult.decimal?.toString()}
+            Signed Decimal: {displayRepresentation.signedValue.toString()}
           </Typography>
           <Typography className="selectable-text" variant="body1" color="textSecondary">
             Unsigned Decimal: {displayRepresentation.unsignedDecimal}

@@ -158,15 +158,30 @@ impl OutputFormat {
     }
 
     pub fn fmt_twos_complement(&self, num: i64) -> String {
-        // Determine the minimum number of bits needed (8, 16, 32, or 64)
-        let bits = if (-128..=127).contains(&num) {
-            8
-        } else if (-32768..=32767).contains(&num) {
-            16
-        } else if (-2147483648..=2147483647).contains(&num) {
-            32
+        // For negative numbers, use signed ranges; for non-negative, use unsigned
+        // ranges so that e.g. 0xFFFD6D64 (4294706276) is 32-bit, not 64-bit,
+        // allowing it to be viewed as a negative 32-bit value.
+        let bits = if num < 0 {
+            if num >= -128 {
+                8
+            } else if num >= -32768 {
+                16
+            } else if num >= -2147483648 {
+                32
+            } else {
+                64
+            }
         } else {
-            64
+            let u = num as u64;
+            if u <= 0xFF {
+                8
+            } else if u <= 0xFFFF {
+                16
+            } else if u <= 0xFFFFFFFF {
+                32
+            } else {
+                64
+            }
         };
         
         // Calculate the mask and apply it to get the proper two's complement representation
@@ -221,15 +236,20 @@ mod test {
         assert_eq!(of.fmt_twos_complement(127), "0x7F");
         assert_eq!(of.fmt_twos_complement(-128), "0x80");
         assert_eq!(of.fmt_twos_complement(-1), "0xFF");
+        assert_eq!(of.fmt_twos_complement(255), "0xFF");
         
         // Test 16-bit values
         assert_eq!(of.fmt_twos_complement(32767), "0x7FFF");
         assert_eq!(of.fmt_twos_complement(-32768), "0x8000");
-        assert_eq!(of.fmt_twos_complement(255), "0x00FF");
+        assert_eq!(of.fmt_twos_complement(256), "0x0100");
+        assert_eq!(of.fmt_twos_complement(65535), "0xFFFF");
         
         // Test 32-bit values
         assert_eq!(of.fmt_twos_complement(2147483647), "0x7FFFFFFF");
         assert_eq!(of.fmt_twos_complement(-2147483648), "0x80000000");
+        // 0xFFFD6D64 should stay 32-bit so it can be viewed as negative
+        assert_eq!(of.fmt_twos_complement(4294798692), "0xFFFD6D64");
+        assert_eq!(of.fmt_twos_complement(4294967295), "0xFFFFFFFF");
         
         // Test 64-bit values
         assert_eq!(of.fmt_twos_complement(9223372036854775807), "0x7FFFFFFFFFFFFFFF");
