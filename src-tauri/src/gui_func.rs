@@ -20,9 +20,7 @@ pub fn evaluate_expression(expr_str: &str, options: CalcOptions) -> Result<Strin
             expression::Command::Expr(expr) => match expression::eval::eval_expr(&expr, 0) {
                 Ok(ans) => {
                     Ok(OutputFormat::default()
-                        .with_format_radix(FormatRadix::Hex)
-                        .with_punctuate_number(*config.punctuate_output())
-                        .fmt(ans))
+                        .fmt_twos_complement(ans))
                 }
                 Err(err) => Err(format!("Failed to evaluate \"{}\": {}", expr_str, err)),
             },

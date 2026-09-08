@@ -156,6 +156,36 @@ impl OutputFormat {
             format!("{}{}", prefix, abs_num_str)
         }
     }
+
+    pub fn fmt_twos_complement(&self, num: i64) -> String {
+        // Determine the minimum number of bits needed (8, 16, 32, or 64)
+        let bits = if (-128..=127).contains(&num) {
+            8
+        } else if (-32768..=32767).contains(&num) {
+            16
+        } else if (-2147483648..=2147483647).contains(&num) {
+            32
+        } else {
+            64
+        };
+        
+        // Calculate the mask and apply it to get the proper two's complement representation
+        let mask = match bits {
+            8 => 0xFF,
+            16 => 0xFFFF,
+            32 => 0xFFFFFFFF,
+            _ => 0xFFFFFFFFFFFFFFFF, // 64 bits
+        };
+        
+        // Convert to unsigned using mask to get proper two's complement representation
+        let unsigned_value = (num as u64) & mask;
+        
+        // Determine how many hex digits we need
+        let hex_digits = bits / 4;
+        
+        // Format as hexadecimal with proper width
+        format!("0x{:0width$X}", unsigned_value, width = hex_digits)
+    }
 }
 
 #[cfg(test)]
@@ -181,5 +211,28 @@ mod test {
             of = of.with_punctuate_number(true);
             assert_eq!(of.fmt(0), output);
         }
+    }
+
+    #[test]
+    fn test_fmt_twos_complement() {
+        let of = OutputFormat::default();
+        
+        // Test 8-bit values
+        assert_eq!(of.fmt_twos_complement(127), "0x7F");
+        assert_eq!(of.fmt_twos_complement(-128), "0x80");
+        assert_eq!(of.fmt_twos_complement(-1), "0xFF");
+        
+        // Test 16-bit values
+        assert_eq!(of.fmt_twos_complement(32767), "0x7FFF");
+        assert_eq!(of.fmt_twos_complement(-32768), "0x8000");
+        assert_eq!(of.fmt_twos_complement(255), "0x00FF");
+        
+        // Test 32-bit values
+        assert_eq!(of.fmt_twos_complement(2147483647), "0x7FFFFFFF");
+        assert_eq!(of.fmt_twos_complement(-2147483648), "0x80000000");
+        
+        // Test 64-bit values
+        assert_eq!(of.fmt_twos_complement(9223372036854775807), "0x7FFFFFFFFFFFFFFF");
+        assert_eq!(of.fmt_twos_complement(-9223372036854775808), "0x8000000000000000");
     }
 }
